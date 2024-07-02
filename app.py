@@ -12,19 +12,19 @@ with app.app_context():
 @app.route('/recipes', methods=['POST'])
 def create_recipe():
     data = request.get_json()
-    required_fields = ['title', 'making_time', 'serves', 'ingredients', 'cost']
-    if not all(field in data for field in required_fields):
-        return jsonify({"message": "Recipe creation failed!", "required": "title, making_time, serves, ingredients, cost"}), 200  # Changed to 200
-    new_recipe = Recipe(
-        title=data['title'],
-        making_time=data['making_time'],
-        serves=data['serves'],
-        ingredients=data['ingredients'],
-        cost=data['cost']
-    )
-    db.session.add(new_recipe)
-    db.session.commit()
-    return jsonify({"message": "Recipe successfully created!", "recipe": new_recipe.to_dict()}), 200  # Changed to 200
+    try:
+        new_recipe = Recipe(
+            title=data['title'],
+            making_time=data['making_time'],
+            serves=data['serves'],
+            ingredients=data['ingredients'],
+            cost=data['cost']
+        )
+        db.session.add(new_recipe)
+        db.session.commit()
+        return jsonify({"message": "Recipe successfully created!", "recipe": new_recipe.to_dict()}), 201
+    except KeyError:
+        return jsonify({"message": "Recipe creation failed!", "required": "title, making_time, serves, ingredients, cost"}), 400
 
 @app.route('/recipes', methods=['GET'])
 def get_recipes():
@@ -34,24 +34,27 @@ def get_recipes():
 @app.route('/recipes/<int:id>', methods=['GET'])
 def get_recipe(id):
     recipe = Recipe.query.get_or_404(id)
-    return jsonify([recipe.to_dict()]), 200  # Return as list
+    return jsonify({"message": "Recipe details by id", "recipe": recipe.to_dict()}), 200
 
 @app.route('/recipes/<int:id>', methods=['PATCH'])
 def update_recipe(id):
     data = request.get_json()
     recipe = Recipe.query.get_or_404(id)
-    if 'title' in data:
-        recipe.title = data['title']
-    if 'making_time' in data:
-        recipe.making_time = data['making_time']
-    if 'serves' in data:
-        recipe.serves = data['serves']
-    if 'ingredients' in data:
-        recipe.ingredients = data['ingredients']
-    if 'cost' in data:
-        recipe.cost = data['cost']
-    db.session.commit()
-    return jsonify({"message": "Recipe successfully updated!", "recipe": recipe.to_dict()}), 200
+    try:
+        if 'title' in data:
+            recipe.title = data['title']
+        if 'making_time' in data:
+            recipe.making_time = data['making_time']
+        if 'serves' in data:
+            recipe.serves = data['serves']
+        if 'ingredients' in data:
+            recipe.ingredients = data['ingredients']
+        if 'cost' in data:
+            recipe.cost = data['cost']
+        db.session.commit()
+        return jsonify({"message": "Recipe successfully updated!", "recipe": recipe.to_dict()}), 200
+    except KeyError:
+        return jsonify({"message": "Recipe update failed!", "required": "title, making_time, serves, ingredients, cost"}), 400
 
 @app.route('/recipes/<int:id>', methods=['DELETE'])
 def delete_recipe(id):
@@ -61,4 +64,4 @@ def delete_recipe(id):
     return jsonify({"message": "Recipe successfully removed!"}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+    app.run(debug=True)
